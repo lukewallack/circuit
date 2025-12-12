@@ -1,6 +1,7 @@
 import java.awt.Point;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 /**
@@ -46,13 +47,91 @@ public class CircuitBoard {
 		Scanner fileScan = new Scanner(new File(filename));
 		
 		//TODO: parse the given file to populate the char[][] (FORMATCHECKER)
-		// throw FileNotFoundException if Scanner cannot read the file
-		// throw InvalidFileFormatException if any issues are encountered while parsing the file
-		
-		ROWS = 0; //replace with initialization statements using values from file
-		COLS = 0;
-		
+		boolean startFound = false;
+		boolean endFound = false;
+		String fileHeader = fileScan.nextLine();
+		Scanner metricScanner = new Scanner(fileHeader);
+
+		// Get array metrics (first line) and check that there are two integers
+		if (metricScanner.hasNextInt()) {
+			ROWS = metricScanner.nextInt();
+			if (metricScanner.hasNextInt()) {
+				COLS = metricScanner.nextInt();
+			} else {
+				fileScan.close();
+				metricScanner.close();
+				throw new InvalidFileFormatException("Line 1 missing second integer");
+			}
+		} else {
+			fileScan.close();
+			metricScanner.close();
+			throw new InvalidFileFormatException("Line 1 missing first integer");
+		}
+
+		//ROWS = metricScanner.nextInt();
+		//COLS = metricScanner.nextInt();
+		board = new char[ROWS][COLS];
+
+		if (metricScanner.hasNextInt()) {
+			fileScan.close();
+			metricScanner.close();
+			throw new InvalidFileFormatException("Extra character in file header");
+		}
+		metricScanner.close();
+
+		int currentRow = 0;
+		while (currentRow < ROWS) {
+			String currentLine = fileScan.nextLine();
+			Scanner lineScan = new Scanner(currentLine);
+			if (currentRow == (ROWS - 1) && fileScan.hasNextLine()) {
+				fileScan.close();
+				lineScan.close();
+				throw new InvalidFileFormatException("Invalid format (extra row)");
+			}
+
+			int currentCol = 0;
+			while (lineScan.hasNext()) {
+				if (currentCol >= COLS) {
+					lineScan.close();
+					throw new InvalidFileFormatException("Invalid format (extra char)");
+				}
+				char currentVal = lineScan.next().charAt(0);
+				board[currentRow][currentCol] = currentVal;
+
+				// value checks
+				if (currentVal == '1') {
+					if (startFound) {
+						lineScan.close();
+						throw new InvalidFileFormatException("Additional starting point found");
+					}
+					startFound = true;
+					startingPoint = new Point(currentRow, currentCol);
+				}
+				if (currentVal == '2') {
+					if (endFound) {
+						lineScan.close();
+						throw new InvalidFileFormatException("Additional ending point found");
+					}
+					endFound = true;
+					endingPoint = new Point(currentRow, currentCol);
+				}
+				if (ALLOWED_CHARS.indexOf(currentVal) == -1) {
+					lineScan.close();
+					throw new InvalidFileFormatException("Character " + currentVal + " not allowed.");
+				}
+				currentCol++;
+			}
+			if (currentCol != COLS) {
+				lineScan.close();
+				throw new InvalidFileFormatException("Invalid format (missing char)");
+			}
+			lineScan.close();
+			currentRow++;
+		}
 		fileScan.close();
+		if (!startFound || !endFound) {
+			throw new InvalidFileFormatException("Missing start or end value");
+		}
 	}
 	
 	/** Copy constructor - duplicates original board
