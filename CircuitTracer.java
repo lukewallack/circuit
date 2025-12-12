@@ -33,6 +33,7 @@ public class CircuitTracer {
 		System.out.println("-c is console output, -g is gui output");
 	}
 
+	/** Helper method to catch FileNotFoundException when checking if file exists. */
 	private void checkFNFE(File checkFile) throws FileNotFoundException {
 		if (!checkFile.exists())
 			throw new FileNotFoundException("Invalid file. File does not exist.");
@@ -104,17 +105,10 @@ public class CircuitTracer {
 			TraceState currState = stateStore.retrieve();
 
 			if (currState.isSolution()) {
-				int bestPathLength;
-				int currentPathLength = currState.pathLength();
-				if (bestPaths.isEmpty()) {
-					bestPathLength = currentPathLength;
-				} else {
-					bestPathLength = bestPaths.getFirst().pathLength();
-				}
-				if (currentPathLength == bestPathLength) {
+				if (bestPaths.isEmpty() || currState.pathLength() == bestPaths.getFirst().pathLength()) {
 					// add to bestPaths
 					bestPaths.add(currState);
-				} else if (currentPathLength < bestPathLength) {
+				} else if (currState.pathLength() < bestPaths.getFirst().pathLength()) {
 					// clear bestPaths & add current tracestate as new shortest path
 					bestPaths.clear();
 					bestPaths.add(currState);
